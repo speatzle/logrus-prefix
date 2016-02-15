@@ -109,6 +109,7 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 	keys []string, timestampFormat string) {
 	var levelColor string
 	var levelText string
+	var debugInf string
 	switch entry.Level {
 	case logrus.InfoLevel:
 		levelColor = ansi.Green
@@ -116,6 +117,12 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 		levelColor = ansi.Yellow
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
 		levelColor = ansi.Red
+	case logrus.DebugLevel:
+		pc, file, line,_ := runtime.Caller(6)
+       
+		callername := runtime.FuncForPC(pc).Name()
+		debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
+		fallthrough
 	default:
 		levelColor = ansi.Blue
 	}
@@ -145,17 +152,17 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 	// timestamp, etc. is).
 	var padlen int
 	if f.DisableTimestamp {
-		padlen, _ = fmt.Fprintf(wr, "%s%s %s%+5s%s%s ", ansi.LightBlack, reset,
-			levelColor, levelText, reset, prefix)
+		padlen, _ = fmt.Fprintf(wr, "%s%s %s%+5s%s%s%s ", ansi.LightBlack, reset,
+			levelColor, levelText, reset, debugInf, prefix)
 	} else {
 		if f.ShortTimestamp {
-			padlen, _ = fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s ",
+			padlen, _ = fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s%s ",
 				ansi.LightBlack, miniTS(), reset, levelColor, levelText, reset,
-				prefix)
+				debugInf, prefix)
 		} else {
-			padlen, _ = fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s ", ansi.LightBlack,
+			padlen, _ = fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s%s ", ansi.LightBlack,
 				entry.Time.Format(timestampFormat), reset, levelColor,
-				levelText, reset, prefix)
+				levelText, reset, debugInf, prefix)
 		}
 	}
 
