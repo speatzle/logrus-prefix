@@ -49,6 +49,9 @@ type TextFormatter struct {
 	// that log extremely frequently and don't use the JSON formatter this may not
 	// be desired.
 	DisableSorting bool
+	
+	// Indent multi-line messages by the timestamp length to preserve proper alignment
+	IndentMultilineMessage bool
 
 	// Timestamp format to use for display when a full timestamp is printed.
 	TimestampFormat string
@@ -139,15 +142,29 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry, keys []s
 		messageFormat = fmt.Sprintf("%%-%ds", f.SpacePadding)
 	}
 
+	// remember how many bytes we've written to the buffer -> how long the timestamp, etc. is
+	var requiredPadding int
 	if f.DisableTimestamp {
-		fmt.Fprintf(wr, "%s%s %s%+5s%s%s "+messageFormat, ansi.LightBlack, reset, levelColor, levelText, reset, prefix, message)
+		requiredPadding, _ = fmt.Fprintf(wr, "%s%s %s%+5s%s%s ", ansi.LightBlack, reset, levelColor, levelText, reset, prefix)
 	} else {
 		if f.ShortTimestamp {
-			fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s "+messageFormat, ansi.LightBlack, miniTS(), reset, levelColor, levelText, reset, prefix, message)
+			requiredPadding, _ = fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s ", ansi.LightBlack, miniTS(), reset, levelColor, levelText, reset, prefix)
 		} else {
-			fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s "+messageFormat, ansi.LightBlack, entry.Time.Format(timestampFormat), reset, levelColor, levelText, reset, prefix, message)
+			requiredPadding, _ = fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s ", ansi.LightBlack, entry.Time.Format(timestampFormat), reset, levelColor, levelText, reset, prefix)
 		}
 	}
+
+	if f.IndentMultilineMessage && strings.ContainsRune(message, '\n') {
+		// here we subtract the length of the used control characters
+		requiredPadding -= len(ansi.LightBlack) + len(levelColor) + 2 * len(reset)
+		if prefix != "" {
+			requiredPadding -= len(ansi.Cyan) + len(reset)
+		}
+		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n" + strings.Repeat(" ", requiredPadding), -1))
+	} else {
+		fmt.Fprintf(wr, messageFormat, message)
+	}
+
 	for _, k := range keys {
 		v := entry.Data[k]
 		fmt.Fprintf(wr, " %s%s%s=%+v", levelColor, k, reset, v)
