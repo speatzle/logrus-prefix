@@ -12,6 +12,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/mgutz/ansi"
+	"path/filepath"
 )
 
 const reset = ansi.Reset
@@ -86,7 +87,7 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if timestampFormat == "" {
 		timestampFormat = time.Stamp
 	}
-	
+
 	if isColored {
 		f.printColored(b, entry, keys, timestampFormat)
 	} else {
@@ -120,7 +121,8 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 		levelColor = ansi.Red
 	case logrus.DebugLevel:
 		pc, file, line, _ := runtime.Caller(6)
-
+		file = filepath.Base(file)
+		
 		callername := runtime.FuncForPC(pc).Name()
 		debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
 		fallthrough
