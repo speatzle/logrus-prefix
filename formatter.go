@@ -49,7 +49,7 @@ type TextFormatter struct {
 	// applications that log extremely frequently and don't use the JSON
 	// formatter this may not be desired.
 	DisableSorting bool
-	
+
 	// Indent multi-line messages by the timestamp length to preserve proper
 	// alignment
 	IndentMultilineMessage bool
@@ -86,6 +86,7 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if timestampFormat == "" {
 		timestampFormat = time.Stamp
 	}
+	
 	if isColored {
 		f.printColored(b, entry, keys, timestampFormat)
 	} else {
@@ -118,8 +119,8 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
 		levelColor = ansi.Red
 	case logrus.DebugLevel:
-		pc, file, line,_ := runtime.Caller(6)
-       
+		pc, file, line, _ := runtime.Caller(6)
+
 		callername := runtime.FuncForPC(pc).Name()
 		debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
 		fallthrough
@@ -168,11 +169,11 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 
 	if f.IndentMultilineMessage && strings.ContainsRune(message, '\n') {
 		// here we subtract the length of the used control characters
-		padlen -= len(ansi.LightBlack) + len(levelColor) + 2 * len(reset)
+		padlen -= len(ansi.LightBlack) + len(levelColor) + 2*len(reset)
 		if prefix != "" {
 			padlen -= len(ansi.Cyan) + len(reset)
 		}
-		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n" +
+		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n"+
 			strings.Repeat(" ", padlen), -1))
 	} else {
 		fmt.Fprintf(wr, messageFormat, message)
