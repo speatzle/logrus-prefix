@@ -45,20 +45,21 @@ type TextFormatter struct {
 	// Enable logging of just the time passed since beginning of execution.
 	ShortTimestamp bool
 
-	// The fields are sorted by default for a consistent output. For applications
-	// that log extremely frequently and don't use the JSON formatter this may not
-	// be desired.
+	// The fields are sorted by default for a consistent output. For
+	// applications that log extremely frequently and don't use the JSON
+	// formatter this may not be desired.
 	DisableSorting bool
 	
-	// Indent multi-line messages by the timestamp length to preserve proper alignment
+	// Indent multi-line messages by the timestamp length to preserve proper
+	// alignment
 	IndentMultilineMessage bool
 
 	// Timestamp format to use for display when a full timestamp is printed.
 	TimestampFormat string
 
-	// Pad msg field with spaces on the right for display.
-	// The value for this parameter will be the size of padding.
-	// Its default value is zero, which means no padding will be applied for msg.
+	// Pad msg field with spaces on the right for display. The value for this
+	// parameter will be the size of padding. Its default value is zero, which
+	// means no padding will be applied for msg.
 	SpacePadding int
 }
 
@@ -104,7 +105,8 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry, keys []string, timestampFormat string) {
+func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
+	keys []string, timestampFormat string) {
 	var levelColor string
 	var levelText string
 	switch entry.Level {
@@ -127,14 +129,11 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry, keys []s
 	prefix := ""
 	message := entry.Message
 
-	if prefixValue, ok := entry.Data["prefix"]; ok {
-		prefix = fmt.Sprint(" ", ansi.Cyan, prefixValue, ":", reset)
-	} else {
-		prefixValue, trimmedMsg := extractPrefix(entry.Message)
-		if len(prefixValue) > 0 {
-			prefix = fmt.Sprint(" ", ansi.Cyan, prefixValue, ":", reset)
-			message = trimmedMsg
-		}
+	if pfx, ok := entry.Data["prefix"]; ok {
+		prefix = fmt.Sprint(" ", ansi.Cyan, pfx, ":", reset)
+	} else if pfx, trimmed := extractPrefix(entry.Message); len(pfx) > 0 {
+		prefix = fmt.Sprint(" ", ansi.Cyan, pfx, ":", reset)
+		message = trimmed
 	}
 
 	messageFormat := "%s"
@@ -142,25 +141,32 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry, keys []s
 		messageFormat = fmt.Sprintf("%%-%ds", f.SpacePadding)
 	}
 
-	// remember how many bytes we've written to the buffer -> how long the timestamp, etc. is
-	var requiredPadding int
+	// Remember how many bytes we've written to the buffer (i.e. how long the
+	// timestamp, etc. is).
+	var padlen int
 	if f.DisableTimestamp {
-		requiredPadding, _ = fmt.Fprintf(wr, "%s%s %s%+5s%s%s ", ansi.LightBlack, reset, levelColor, levelText, reset, prefix)
+		padlen, _ = fmt.Fprintf(wr, "%s%s %s%+5s%s%s ", ansi.LightBlack, reset,
+			levelColor, levelText, reset, prefix)
 	} else {
 		if f.ShortTimestamp {
-			requiredPadding, _ = fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s ", ansi.LightBlack, miniTS(), reset, levelColor, levelText, reset, prefix)
+			padlen, _ = fmt.Fprintf(wr, "%s[%04d]%s %s%+5s%s%s ",
+				ansi.LightBlack, miniTS(), reset, levelColor, levelText, reset,
+				prefix)
 		} else {
-			requiredPadding, _ = fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s ", ansi.LightBlack, entry.Time.Format(timestampFormat), reset, levelColor, levelText, reset, prefix)
+			padlen, _ = fmt.Fprintf(wr, "%s[%s]%s %s%+5s%s%s ", ansi.LightBlack,
+				entry.Time.Format(timestampFormat), reset, levelColor,
+				levelText, reset, prefix)
 		}
 	}
 
 	if f.IndentMultilineMessage && strings.ContainsRune(message, '\n') {
 		// here we subtract the length of the used control characters
-		requiredPadding -= len(ansi.LightBlack) + len(levelColor) + 2 * len(reset)
+		padlen -= len(ansi.LightBlack) + len(levelColor) + 2 * len(reset)
 		if prefix != "" {
-			requiredPadding -= len(ansi.Cyan) + len(reset)
+			padlen -= len(ansi.Cyan) + len(reset)
 		}
-		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n" + strings.Repeat(" ", requiredPadding), -1))
+		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n" +
+			strings.Repeat(" ", padlen), -1))
 	} else {
 		fmt.Fprintf(wr, messageFormat, message)
 	}
@@ -193,7 +199,8 @@ func extractPrefix(msg string) (string, string) {
 	return prefix, msg
 }
 
-func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}) {
+func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string,
+	value interface{}) {
 	b.WriteString(key)
 	b.WriteByte('=')
 
