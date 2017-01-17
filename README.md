@@ -1,4 +1,5 @@
 # Logrus Prefixed Log Formatter
+
 [Logrus](https://github.com/Sirupsen/logrus) formatter mainly based on original `logrus.TextFormatter` but with slightly
 modified colored output and support for log entry prefixes, e.g. message source followed by a colon.
 
@@ -18,13 +19,15 @@ exit status 1
 ```
 
 ## Installation
+
 To install formatter, use `go get`:
 
 ```sh
-$ go get github.com/x-cray/logrus-prefixed-formatter
+go get github.com/chappjc/logrus-prefix
 ```
 
 ## Usage
+
 Here is how it should be used:
 
 ```go
@@ -32,13 +35,13 @@ package main
 
 import (
 	"github.com/Sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	log_prefixed "github.com/chappjc/logrus-prefix"
 )
 
 var log = logrus.New()
 
 func init() {
-	log.Formatter = new(prefixed.TextFormatter)
+	log.Formatter = new(log_prefixed.TextFormatter)
 	log.Level = logrus.DebugLevel
 }
 
@@ -57,6 +60,7 @@ func main() {
 ```
 
 ## API
+
 `prefixed.TextFormatter` exposes the following fields:
 
 * `ForceColors bool` — set to true to bypass checking for a TTY before outputting colors.
@@ -68,5 +72,6 @@ func main() {
 * `SpacePadding int` — Pad msg field with spaces on the right for display. The value for this parameter will be the size of padding. Its default value is zero, which means no padding will be applied.
 * `IndentMultilineMessage bool` — Indent multi-line messages by the timestamp length to preserve proper alignment
 
-# License
-MIT
+## License
+
+[MIT](https://opensource.org/licenses/MIT)
