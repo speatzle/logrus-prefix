@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -19,12 +19,10 @@ const reset = ansi.Reset
 
 var (
 	baseTimestamp time.Time
-	isTerminal    bool
 )
 
 func init() {
 	baseTimestamp = time.Now()
-	isTerminal = logrus.IsTerminal()
 }
 
 func miniTS() int {
@@ -62,6 +60,10 @@ type TextFormatter struct {
 	// parameter will be the size of padding. Its default value is zero, which
 	// means no padding will be applied for msg.
 	SpacePadding int
+
+	// Whether the logger's out is to a terminal
+	isTerminal   bool
+	terminalOnce sync.Once
 }
 
 func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
@@ -80,8 +82,13 @@ func (f *TextFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 
 	prefixFieldClashes(entry.Data)
 
-	isColorTerminal := isTerminal && (runtime.GOOS != "windows")
-	isColored := (f.ForceColors || isColorTerminal) && !f.DisableColors
+	f.terminalOnce.Do(func() {
+		if entry.Logger != nil {
+			f.isTerminal = logrus.IsTerminal(entry.Logger.Out)
+		}
+	})
+
+	isColored := (f.ForceColors || f.isTerminal) && !f.DisableColors
 
 	timestampFormat := f.TimestampFormat
 	if timestampFormat == "" {
