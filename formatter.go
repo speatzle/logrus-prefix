@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -12,7 +14,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/mgutz/ansi"
-	"path/filepath"
 )
 
 const reset = ansi.Reset
@@ -129,7 +130,7 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 	case logrus.DebugLevel:
 		pc, file, line, _ := runtime.Caller(6)
 		file = filepath.Base(file)
-		
+
 		callername := runtime.FuncForPC(pc).Name()
 		debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
 		fallthrough
