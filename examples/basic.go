@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/Sirupsen/logrus"
-	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+	prefixed "github.com/chappjc/logrus-prefix"
 )
 
 var log = logrus.New()
