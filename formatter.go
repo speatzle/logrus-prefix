@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/mgutz/ansi"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -57,6 +59,7 @@ type ColorScheme struct {
 	PrefixStyle     string
 	TimestampStyle  string
 }
+
 // TextFormatter is the prefixed version of logrus.TextFormatter
 type compiledColorScheme struct {
 	InfoLevelColor  func(string) string
@@ -91,11 +94,6 @@ type TextFormatter struct {
 	// the time passed since beginning of execution.
 	FullTimestamp bool
 
-
-	// Indent multi-line messages by the timestamp length to preserve proper
-	// alignment
-	IndentMultilineMessage bool
-
 	// Timestamp format to use for display when a full timestamp is printed.
 	TimestampFormat string
 
@@ -103,7 +101,7 @@ type TextFormatter struct {
 	// applications that log extremely frequently and don't use the JSON
 	// formatter this may not be desired.
 	DisableSorting bool
-	
+
 	// Wrap empty fields in quotes if true.
 	QuoteEmptyFields bool
 
@@ -240,7 +238,6 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 		callername := runtime.FuncForPC(pc).Name()
 		debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
 		levelColor = colorScheme.DebugLevelColor
-		fallthrough
 	case logrus.InfoLevel:
 		levelColor = colorScheme.InfoLevelColor
 	case logrus.WarnLevel:
@@ -286,9 +283,8 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 
 	// Remember how many bytes we've written to the buffer (i.e. how long the
 	// timestamp, etc. is).
-	var padlen int
 	if f.DisableTimestamp {
-		padlen, _ = fmt.Fprintf(wr, "%s%s%s "+messageFormat, level, debugInf, prefix, message)
+		fmt.Fprintf(wr, "%s%s%s "+messageFormat, level, debugInf, prefix, message)
 	} else {
 		var timestamp string
 		if !f.FullTimestamp {
@@ -296,21 +292,9 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 		} else {
 			timestamp = fmt.Sprintf("[%s]", entry.Time.Format(timestampFormat))
 		}
-		padlen, _ = fmt.Fprintf(wr, "%s %s%s%s "+messageFormat, colorScheme.TimestampColor(timestamp), level, debugInf, prefix, message)
+		fmt.Fprintf(wr, "%s %s%s%s "+messageFormat, colorScheme.TimestampColor(timestamp), level, debugInf, prefix, message)
 	}
-	
-	if f.IndentMultilineMessage && strings.ContainsRune(message, '\n') {
-		// here we subtract the length of the used control characters
-		padlen -= len(ansi.LightBlack) + len(levelColor) + 2*len(reset)
-		if prefix != "" {
-			padlen -= len(ansi.Cyan) + len(reset)
-		}
-		fmt.Fprintf(wr, messageFormat, strings.Replace(message, "\n", "\n"+
-			strings.Repeat(" ", padlen), -1))
-	} else {
-		fmt.Fprintf(wr, messageFormat, message)
-	}
-	
+
 	for _, k := range keys {
 		if k != "prefix" {
 			v := entry.Data[k]

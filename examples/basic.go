@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	prefixed "github.com/chappjc/logrus-prefix"
+	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.New()
