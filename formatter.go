@@ -232,11 +232,8 @@ func (f *TextFormatter) printColored(wr io.Writer, entry *logrus.Entry,
 	var debugInf string
 	switch entry.Level {
 	case logrus.DebugLevel:
-		pc, file, line, _ := runtime.Caller(6)
+		pc, file, _ := runtime.Caller(6)
 		file = filepath.Base(file)
-
-		callername := runtime.FuncForPC(pc).Name()
-		//debugInf = fmt.Sprintf(" [%s][%s][%d]", callername, file, line)
 		debugInf = ""
 		levelColor = colorScheme.DebugLevelColor
 	case logrus.InfoLevel:
