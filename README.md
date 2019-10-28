@@ -1,3 +1,6 @@
+# This version Removes extra debug info when calling log.Debug("").
+This info is completly useless if the logger is an instance because it will always report the instance itself.
+
 # Logrus Prefixed Log Formatter
 [![Build Status](https://travis-ci.org/x-cray/logrus-prefixed-formatter.svg?branch=master)](https://travis-ci.org/x-cray/logrus-prefixed-formatter)
 
